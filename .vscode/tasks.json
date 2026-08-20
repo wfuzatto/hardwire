@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Hardwire: build debug APK",
+      "type": "shell",
+      "command": "./gradlew assembleDebug",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Hardwire: install debug APK",
+      "type": "shell",
+      "command": "./gradlew installDebug",
+      "problemMatcher": []
+    },
+    {
+      "label": "Hardwire: clean",
+      "type": "shell",
+      "command": "./gradlew clean",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+
+# Firebase Android config (environment-specific)
+app/google-services.json
+
+# Backend secrets
+backend/config.php
+backend/firebase-service-account.json
+backend/*.log
