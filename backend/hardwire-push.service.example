@@ -1,0 +1,19 @@
+[Unit]
+Description=Hardwire realtime FCM watcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/hardwire
+EnvironmentFile=/etc/hardwire-push.env
+ExecStart=/usr/bin/php /opt/hardwire/backend/bin/watch-site.php
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

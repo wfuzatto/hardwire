@@ -13,3 +13,5 @@ app/google-services.json
 backend/config.php
 backend/firebase-service-account.json
 backend/*.log
+
+backend/runtime/

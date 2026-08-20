@@ -37,3 +37,21 @@ Teste direto por CLI:
 ```bash
 php backend/bin/send-event.php 'Recanto_Das_Hortensias' 'OFFLINE - AP_PISCINA' MEDIA
 ```
+
+## Opção sem alterar o site atual: watcher em tempo real
+
+Se você ainda não quiser editar o ponto que grava os eventos, rode o watcher. Ele lê a tabela atual a cada 2 segundos por padrão e envia FCM somente para linhas novas:
+
+```bash
+php backend/bin/watch-site.php
+```
+
+Variáveis opcionais:
+
+```text
+HARDWIRE_POLL_SECONDS=2
+HARDWIRE_SITE_URL=https://prodatastelecom.com.br/sites/hardwire/
+HARDWIRE_STATE_FILE=/var/lib/hardwire/watcher-state.json
+```
+
+Há um exemplo de serviço systemd em `backend/hardwire-push.service.example`. O webhook direto continua sendo a opção de menor latência; o watcher é o caminho mais rápido para colocar o push em produção sem mexer no código que já existe.
