@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "476991280484",
+    "project_id": "hardwire-e5391",
+    "storage_bucket": "hardwire-e5391.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:476991280484:android:285d270fe4d14d5cf79671",
+        "android_client_info": {
+          "package_name": "br.com.prodatastelecom.hardwire"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAv6t8Gr2ATLhRg06-XuuZ9VJp9VtZfvoE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
