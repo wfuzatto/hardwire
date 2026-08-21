@@ -1,6 +1,8 @@
 package br.com.prodatastelecom.hardwire.ui
 
 import android.app.Application
+import android.app.NotificationManager
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import br.com.prodatastelecom.hardwire.data.EventRepository
@@ -43,6 +45,20 @@ class HardwireViewModel(application: Application) : AndroidViewModel(application
                 lastSyncEpoch = if (result.isSuccess) System.currentTimeMillis() else _state.value.lastSyncEpoch,
                 error = result.exceptionOrNull()?.message
             )
+        }
+    }
+
+    fun clearNotifications() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.clearAll()
+            }
+
+            val notificationManager = getApplication<Application>()
+                .getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancelAll()
+
+            _state.value = _state.value.copy(events = emptyList(), error = null)
         }
     }
 
