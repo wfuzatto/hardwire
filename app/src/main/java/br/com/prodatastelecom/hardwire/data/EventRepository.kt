@@ -13,5 +13,9 @@ class EventRepository(context: Context) {
         return SyncResult(fetched = fetched.size, inserted = inserted)
     }
 
+    fun clearAll() {
+        database.clearAll()
+    }
+
     data class SyncResult(val fetched: Int, val inserted: Int)
 }
