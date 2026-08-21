@@ -128,12 +128,6 @@ fun HardwireScreen(
         ) {
             Header(state.events)
             Spacer(Modifier.height(12.dp))
-            PushStatus(
-                firebaseConfigured = firebaseConfigured,
-                permissionGranted = notificationPermissionGranted,
-                onRequestPermission = onRequestNotificationPermission
-            )
-            Spacer(Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = query,
@@ -232,46 +226,6 @@ private fun CounterBadge(label: String, count: Int, background: androidx.compose
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold
         )
-    }
-}
-
-@Composable
-private fun PushStatus(
-    firebaseConfigured: Boolean,
-    permissionGranted: Boolean,
-    onRequestPermission: () -> Unit
-) {
-    val active = firebaseConfigured && permissionGranted
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        color = if (active) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
-        else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(if (active) "●" else "○", fontWeight = FontWeight.Black)
-            Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    if (active) "Push Android ativo" else "Push Android precisa de configuração",
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    when {
-                        !firebaseConfigured -> "Adicione app/google-services.json para habilitar o FCM."
-                        !permissionGranted -> "Autorize as notificações do Android para receber os alertas."
-                        else -> "Inscrito no tópico hardwire-events; alertas de alta prioridade habilitados."
-                    },
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            if (firebaseConfigured && !permissionGranted) {
-                Button(onClick = onRequestPermission) { Text("Autorizar") }
-            }
-        }
     }
 }
 
