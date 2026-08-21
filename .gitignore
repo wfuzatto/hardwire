@@ -11,7 +11,9 @@ app/google-services.json
 
 # Backend secrets
 backend/config.php
-backend/firebase-service-account.json
+backend/*firebase*.json
+backend/*service-account*.json
+backend/*service_account*.json
+backend/*adminsdk*.json
 backend/*.log
-
 backend/runtime/
