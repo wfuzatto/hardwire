@@ -45,8 +45,7 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val state = if (event.isOffline) "OFFLINE" else if (event.isOnline) "ONLINE" else event.priority
-        val title = "$state • ${event.client}"
+        val title = event.client
         val body = "${event.status}  |  ${event.priority}  |  ${event.timestamp}"
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
