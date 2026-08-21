@@ -3,17 +3,33 @@ declare(strict_types=1);
 
 final class SiteEventReader
 {
-    public function __construct(private readonly string $url) {}
+    private string $url;
+
+    public function __construct(string $url)
+    {
+        $this->url = $url;
+    }
 
     public function fetch(): array
     {
+        if (!function_exists('curl_init')) {
+            throw new RuntimeException('PHP cURL extension is not enabled.');
+        }
+        if (!class_exists('DOMDocument')) {
+            throw new RuntimeException('PHP DOM/XML extension is not enabled.');
+        }
+
         $curl = curl_init($this->url);
+        if ($curl === false) {
+            throw new RuntimeException('Unable to initialize cURL.');
+        }
+
         curl_setopt_array($curl, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_CONNECTTIMEOUT => 8,
             CURLOPT_TIMEOUT => 12,
-            CURLOPT_USERAGENT => 'Hardwire-Push-Watcher/1.0',
+            CURLOPT_USERAGENT => 'Hardwire-Push-Watcher/1.1',
         ]);
         $html = curl_exec($curl);
         if ($html === false) {
@@ -21,6 +37,7 @@ final class SiteEventReader
             curl_close($curl);
             throw new RuntimeException('Unable to load Hardwire site: ' . $error);
         }
+
         $httpCode = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
         curl_close($curl);
         if ($httpCode < 200 || $httpCode >= 300) {
@@ -35,18 +52,30 @@ final class SiteEventReader
         $xpath = new DOMXPath($dom);
 
         $events = [];
-        foreach ($xpath->query('//table//tr') as $row) {
+        $rows = $xpath->query('//table//tr');
+        if ($rows === false) {
+            return $events;
+        }
+
+        foreach ($rows as $row) {
             $cells = $xpath->query('./td', $row);
             if ($cells === false || $cells->length < 4) {
                 continue;
             }
-            $timestamp = $this->clean($cells->item(0)?->textContent ?? '');
-            $client = $this->clean($cells->item(1)?->textContent ?? '');
-            $status = $this->clean($cells->item(2)?->textContent ?? '');
-            $priority = $this->clean($cells->item(3)?->textContent ?? 'INFO');
+
+            $timestampNode = $cells->item(0);
+            $clientNode = $cells->item(1);
+            $statusNode = $cells->item(2);
+            $priorityNode = $cells->item(3);
+
+            $timestamp = $this->clean($timestampNode ? $timestampNode->textContent : '');
+            $client = $this->clean($clientNode ? $clientNode->textContent : '');
+            $status = $this->clean($statusNode ? $statusNode->textContent : '');
+            $priority = $this->clean($priorityNode ? $priorityNode->textContent : 'INFO');
             if ($timestamp === '' || $client === '' || $status === '') {
                 continue;
             }
+
             $eventId = hash('sha256', implode('|', [$timestamp, $client, $status, $priority]));
             $events[] = [
                 'event_id' => $eventId,
@@ -56,11 +85,13 @@ final class SiteEventReader
                 'priority' => $priority,
             ];
         }
+
         return $events;
     }
 
     private function clean(string $value): string
     {
-        return trim((string)preg_replace('/\s+/u', ' ', html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        $decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return trim((string)preg_replace('/\s+/u', ' ', $decoded));
     }
 }

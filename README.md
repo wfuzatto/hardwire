@@ -1,68 +1,116 @@
-# Hardwire Android
+# Hardwire Android + Push
 
-Aplicativo Android simples para acompanhar em tempo real os eventos exibidos em:
+Aplicativo Android para acompanhar em tempo real os eventos exibidos em:
 
 `https://prodatastelecom.com.br/sites/hardwire/`
 
-## O que já está implementado
+## Implementado
 
-- histórico em tabela com Data/Hora, Cliente, Status e Prioridade;
-- sincronização do histórico diretamente do site Hardwire atual;
-- banco SQLite local com deduplicação e até 500 eventos recentes;
-- busca por cliente/equipamento/status;
-- filtros Todos, Falhas e Online;
-- atualização manual e automática a cada 30 s enquanto o app está visível;
-- Firebase Cloud Messaging por tópico `hardwire-events`;
-- `FirebaseMessagingService` para receber mensagens de dados;
-- notificação Android nativa em canal de **alta importância**, com som e vibração;
-- solicitação de `POST_NOTIFICATIONS` no Android 13+;
-- backend PHP FCM HTTP v1 pronto para integrar no monitoramento existente;
-- tema escuro de operação/NOC, com falhas em destaque;
-- tarefas de build para VS Code.
+- histórico com Data/Hora, Cliente, Status e Prioridade;
+- sincronização do histórico a partir do Hardwire web;
+- SQLite local com deduplicação e até 500 eventos recentes;
+- busca e filtros Todos/Falhas/Online;
+- Firebase Cloud Messaging no tópico `hardwire-events`;
+- `FirebaseMessagingService` para mensagens de dados;
+- notificação Android nativa de alta importância, com som e vibração;
+- `POST_NOTIFICATIONS` no Android 13+;
+- backend PHP FCM HTTP v1 para Locaweb;
+- integração PHP direta, webhook HTTP opcional e watcher de contingência;
+- diagnóstico do backend em `/push/health.php`;
+- tema escuro de operação/NOC;
+- tarefas de build para VS Code e GitHub Actions.
 
-## Compilar no VS Code
+## Android
 
-Requisitos:
+Package/applicationId:
+
+```text
+br.com.prodatastelecom.hardwire
+```
+
+Projeto Firebase cadastrado:
+
+```text
+hardwire-e5391
+```
+
+Tópico FCM:
+
+```text
+hardwire-events
+```
+
+Compilar:
+
+```bash
+./gradlew clean assembleDebug --stacktrace
+```
+
+APK:
+
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+Requisitos de build:
 
 - JDK 17
 - Android SDK 36
-- `ANDROID_HOME`/`ANDROID_SDK_ROOT` configurado
 
-Linux/macOS:
+## Backend Locaweb
 
-```bash
-./gradlew assembleDebug
-```
-
-Windows:
-
-```bat
-gradlew.bat assembleDebug
-```
-
-O script baixa Gradle 9.5.0 automaticamente se não houver `gradle` instalado no sistema.
-
-APK esperado:
-
-`app/build/outputs/apk/debug/app-debug.apk`
-
-No VS Code, também é possível executar **Terminal > Run Task > Hardwire: build debug APK**.
-
-## Push: passo obrigatório
-
-Para a notificação em tempo real funcionar, faça a configuração de Firebase descrita em `docs/FIREBASE_SETUP.md`.
-
-O app foi intencionalmente feito para **compilar mesmo antes** de você adicionar `app/google-services.json`. Sem esse arquivo ele continua mostrando o histórico, mas não recebe FCM.
-
-## Integração com o site atual
-
-O histórico já funciona consumindo a tabela HTML pública do site existente. Para tempo real com o app fechado, o código que hoje cria cada evento no Hardwire deve também chamar o webhook PHP em `backend/notify.php`.
-
-Fluxo final:
+O conteúdo da pasta `backend/` deve ser publicado como:
 
 ```text
-Monitoramento -> grava evento atual -> Hardwire Web
-             -> chama notify.php -> FCM -> Android
-                                      -> SQLite local
-                                      -> notificação nativa
+/sites/hardwire/push/
 ```
+
+Depois, coloque o JSON **privado** da Firebase Service Account dentro dessa pasta (ou aponte para ele por configuração). O backend autodetecta um JSON válido e o `.htaccess` bloqueia download HTTP das credenciais.
+
+Diagnóstico:
+
+```text
+https://prodatastelecom.com.br/sites/hardwire/push/
+```
+
+O retorno deve indicar `"ready": true` e `"service_account_found": true`.
+
+### Integração recomendada
+
+No PHP que grava um novo evento:
+
+```php
+require_once __DIR__ . '/push/integration.php';
+```
+
+Logo depois de persistir o evento:
+
+```php
+hardwire_push_event_safe(
+    $cliente,
+    $status,
+    $prioridade,
+    $dataHora ?? null,
+    $idEvento ?? null
+);
+```
+
+Isso entrega o fluxo de menor latência:
+
+```text
+Monitoramento
+    -> grava evento no Hardwire
+    -> integration.php
+    -> Firebase FCM
+    -> Android
+       -> SQLite local
+       -> notificação nativa
+```
+
+A falha do Firebase nunca deve impedir o Hardwire de gravar/processar o evento; `hardwire_push_event_safe()` registra eventual erro no log e retorna `false`.
+
+Veja todos os detalhes em `backend/README.md`.
+
+## Segurança
+
+`google-services.json` pertence ao cliente Android e não é a chave privada do backend. Já a Service Account contém chave privada e nunca deve ser versionada no repositório.

@@ -1,0 +1,11 @@
+Options -Indexes
+
+# Never expose Firebase private credentials or local configuration.
+<FilesMatch "(?i)^(config\.php|config\.example\.php|.*firebase.*\.json|.*service[-_]?account.*\.json)$">
+    Require all denied
+</FilesMatch>
+
+# Dotfiles must never be served.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
