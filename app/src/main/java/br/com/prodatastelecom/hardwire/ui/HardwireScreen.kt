@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,6 +27,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -60,6 +62,7 @@ fun HardwireScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     var filter by remember { mutableStateOf(EventFilter.ALL) }
     var query by remember { mutableStateOf("") }
+    var showClearDialog by remember { mutableStateOf(false) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -91,6 +94,31 @@ fun HardwireScreen(
         }
     }
 
+    if (showClearDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            title = { Text("Limpar notificações?") },
+            text = {
+                Text("Isso remove as notificações do Android e limpa o histórico local exibido na tabela. Eventos novos continuarão aparecendo normalmente.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearDialog = false
+                        viewModel.clearNotifications()
+                    }
+                ) {
+                    Text("Limpar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
         Column(
             modifier = Modifier
@@ -117,14 +145,30 @@ fun HardwireScreen(
 
             Spacer(Modifier.height(10.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilterChip(selected = filter == EventFilter.ALL, onClick = { filter = EventFilter.ALL }, label = { Text("Todos") })
                 FilterChip(selected = filter == EventFilter.OFFLINE, onClick = { filter = EventFilter.OFFLINE }, label = { Text("Falhas") })
                 FilterChip(selected = filter == EventFilter.ONLINE, onClick = { filter = EventFilter.ONLINE }, label = { Text("Online") })
-                Spacer(Modifier.weight(1f))
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = { showClearDialog = true },
+                    enabled = state.events.isNotEmpty()
+                ) {
+                    Text("Limpar")
+                }
+                Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = { viewModel.refresh() },
                     enabled = !state.isRefreshing,
