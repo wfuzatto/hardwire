@@ -11,6 +11,9 @@ class EventDatabase private constructor(context: Context) : SQLiteOpenHelper(
     null,
     DB_VERSION
 ) {
+    private val appContext = context.applicationContext
+    private val preferences = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -36,6 +39,11 @@ class EventDatabase private constructor(context: Context) : SQLiteOpenHelper(
 
     @Synchronized
     fun insert(event: HardwireEvent): Boolean {
+        val clearedBeforeEpoch = preferences.getLong(KEY_CLEARED_BEFORE_EPOCH, 0L)
+        if (clearedBeforeEpoch > 0L && event.epochMillis <= clearedBeforeEpoch) {
+            return false
+        }
+
         val values = ContentValues().apply {
             put("id", event.id)
             put("event_time", event.timestamp)
@@ -96,9 +104,28 @@ class EventDatabase private constructor(context: Context) : SQLiteOpenHelper(
         return result
     }
 
+    @Synchronized
+    fun clearAll() {
+        val newestEpoch = readableDatabase.rawQuery(
+            "SELECT MAX(event_epoch) FROM events",
+            null
+        ).use { cursor ->
+            if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0)
+            else System.currentTimeMillis()
+        }
+
+        preferences.edit()
+            .putLong(KEY_CLEARED_BEFORE_EPOCH, newestEpoch)
+            .apply()
+
+        writableDatabase.delete("events", null, null)
+    }
+
     companion object {
         private const val DB_NAME = "hardwire.db"
         private const val DB_VERSION = 1
+        private const val PREFS_NAME = "hardwire_history"
+        private const val KEY_CLEARED_BEFORE_EPOCH = "cleared_before_epoch"
 
         @Volatile
         private var instance: EventDatabase? = null
