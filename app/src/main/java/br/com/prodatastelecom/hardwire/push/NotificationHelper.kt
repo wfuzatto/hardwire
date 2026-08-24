@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
 import android.os.Build
+import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import br.com.prodatastelecom.hardwire.MainActivity
 import br.com.prodatastelecom.hardwire.R
@@ -48,11 +49,38 @@ object NotificationHelper {
         val title = event.client
         val body = "${event.status}  |  ${event.priority}  |  ${event.timestamp}"
 
+        val backgroundRes = when {
+            event.isOffline -> R.drawable.bg_notification_offline
+            event.isOnline -> R.drawable.bg_notification_online
+            else -> R.drawable.bg_notification_neutral
+        }
+        val statusIcon = when {
+            event.isOffline -> "!"
+            event.isOnline -> "✓"
+            else -> "•"
+        }
+
+        val compactView = RemoteViews(context.packageName, R.layout.notification_hardwire).apply {
+            setTextViewText(R.id.notification_title, title)
+            setTextViewText(R.id.notification_body, body)
+            setTextViewText(R.id.status_icon, statusIcon)
+            setInt(R.id.notification_root, "setBackgroundResource", backgroundRes)
+        }
+
+        val expandedView = RemoteViews(context.packageName, R.layout.notification_hardwire_big).apply {
+            setTextViewText(R.id.notification_title, title)
+            setTextViewText(R.id.notification_body, body)
+            setTextViewText(R.id.status_icon, statusIcon)
+            setInt(R.id.notification_root, "setBackgroundResource", backgroundRes)
+        }
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setCustomContentView(compactView)
+            .setCustomBigContentView(expandedView)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
